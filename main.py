@@ -11,7 +11,7 @@ def main():
     Main function to start the game.
     Handles any high-level initialization and error handling.
     """
-    print("Welcome to 2Pillz Battle Game!")
+    print("Welcome to Head Busters Game!")
     print("Get ready to fight!\n")
     
     try:
