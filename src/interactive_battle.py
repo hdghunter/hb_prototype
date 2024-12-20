@@ -1,12 +1,14 @@
 """
 Interactive battle system module implementing player vs AI gameplay.
-Updated with fair AI behavior and sequential player-then-AI turns.
+Updated to use the new state management and effect processing systems.
 """
 
 import random
 from typing import List, Dict, Tuple
 from .game_core import Fighter, PillzType
 from .battle_system import BattleSystem
+from .battle_state import BattleState
+from .effect_manager import EffectManager
 
 def get_valid_stat_input(prompt: str, min_value: int = 1, max_value: int = 50) -> int:
     """Helper function to get valid numerical input for fighter stats"""
@@ -35,64 +37,77 @@ def create_fighter(is_player: bool = True) -> Fighter:
     return Fighter(name, damage, resistance)
 
 class InteractiveBattleSystem(BattleSystem):
+    """
+    Extends the base battle system to provide interactive gameplay.
+    Updated to use battle state and effect manager.
+    """
+    
     def play_interactive_battle(self, fighter1: Fighter, fighter2: Fighter) -> List[Dict]:
         """Run an interactive battle with clear player-then-AI turn structure"""
+        battle_state = BattleState(fighter1, fighter2)
         battle_log = []
         
-        for round_num in range(1, 7):
-            self.display_round_start(round_num, fighter1, fighter2)
+        while True:
+            self.display_round_start(battle_state)
             
             # Player's turn (two steps)
             print("\nYOUR TURN")
             print("---------")
             move1 = self.get_player_move_choice()
+            battle_state.record_move(fighter1, move1)
+            
             player_pillz = self.get_player_pillz_choice()
-            fighter1.apply_pillz(player_pillz)
+            if player_pillz != PillzType.NONE:
+                fighter1.apply_pillz(player_pillz, battle_state.current_round)
+                battle_state.record_effect(fighter1, fighter1.active_effects[-1])
             
             # AI's turn (random decisions)
             print("\nAI OPPONENT'S TURN")
             print("-----------------")
             move2, ai_pillz = self._get_ai_decisions()
-            fighter2.apply_pillz(ai_pillz)
+            battle_state.record_move(fighter2, move2)
+            
+            if ai_pillz != PillzType.NONE:
+                fighter2.apply_pillz(ai_pillz, battle_state.current_round)
+                battle_state.record_effect(fighter2, fighter2.active_effects[-1])
+                print(f"AI used {ai_pillz.name}")
             
             # Show both fighters' choices
-            self.display_choices(fighter1, fighter2, move1, move2)
+            self.display_choices(battle_state)
             
             # Process round and get results
-            result, points1, points2 = self.process_round(fighter1, fighter2, move1, move2)
-            
-            self.display_round_results(
-                fighter1, fighter2, move1, move2, 
-                result, points1, points2
+            result, points1, points2 = self.process_round(
+                battle_state, move1, move2
             )
             
+            self.display_round_results(battle_state, points1, points2)
+            
             battle_log.append(self._create_round_log(
-                round_num, fighter1, fighter2, 
-                move1, move2, result, points1, points2
+                battle_state, points1, points2
             ))
             
-            fighter1.update_effects()
-            fighter2.update_effects()
+            if not battle_state.advance_round():
+                break
             
             input("\nPress Enter to continue to the next round...")
         
         return battle_log
 
-    def display_round_start(self, round_num: int, fighter1: Fighter, fighter2: Fighter):
+    def display_round_start(self, battle_state: BattleState):
         """Display the start of round information"""
-        print(f"\n{'='*20} ROUND {round_num} {'='*20}")
+        print(f"\n{'='*20} ROUND {battle_state.current_round} {'='*20}")
         
         # Player status
-        print(f"\n{fighter1.name}:")
-        print(f"Current Score: {fighter1.score:.1f} points")
-        if fighter1.current_effect:
-            print(f"Active Effect: {fighter1.current_effect.name}")
+        print(f"\n{battle_state.fighter1.name}:")
+        print(f"Current Score: {battle_state.fighter1.score:.1f} points")
+        for effect in battle_state.get_active_effects(battle_state.fighter1):
+            print(f"Active Effect: {effect.name}")
         
         # AI status
-        print(f"\n{fighter2.name}:")
-        print(f"Current Score: {fighter2.score:.1f} points")
-        if fighter2.current_effect:
-            print(f"Active Effect: {fighter2.current_effect.name}")
+        print(f"\n{battle_state.fighter2.name}:")
+        print(f"Current Score: {battle_state.fighter2.score:.1f} points")
+        for effect in battle_state.get_active_effects(battle_state.fighter2):
+            print(f"Active Effect: {effect.name}")
         
         print(f"\n{'='*50}")
 
@@ -148,74 +163,74 @@ class InteractiveBattleSystem(BattleSystem):
         pillz_choices = [PillzType.NONE] * 6 + [PillzType.SOUTH_PACIFIC] * 2 + [PillzType.NORDIC_SHIELD] * 2
         pillz = random.choice(pillz_choices)
         
-        # Display AI's choices
         print(f"AI selected its move and pillz...")
         
         return move, pillz
 
-    def display_choices(self, fighter1: Fighter, fighter2: Fighter, move1: str, move2: str):
+    def display_choices(self, battle_state: BattleState):
         """Display both fighters' choices"""
         print("\nSelected Moves and Effects:")
         print("--------------------------")
-        print(f"{fighter1.name}:")
-        print(f"Move: {move1}")
-        print(f"Effect: {fighter1.current_effect.name if fighter1.current_effect else 'None'}")
+        print(f"{battle_state.fighter1.name}:")
+        print(f"Move: {battle_state.current_round_state.fighter1_move}")
+        if battle_state.current_round_state.fighter1_effect:
+            print(f"Effect: {battle_state.current_round_state.fighter1_effect.name}")
         
-        print(f"\n{fighter2.name}:")
-        print(f"Move: {move2}")
-        print(f"Effect: {fighter2.current_effect.name if fighter2.current_effect else 'None'}")
+        print(f"\n{battle_state.fighter2.name}:")
+        print(f"Move: {battle_state.current_round_state.fighter2_move}")
+        if battle_state.current_round_state.fighter2_effect:
+            print(f"Effect: {battle_state.current_round_state.fighter2_effect.name}")
 
-    def display_round_results(self, 
-                            fighter1: Fighter, 
-                            fighter2: Fighter, 
-                            move1: str, 
-                            move2: str, 
-                            result: str,
-                            points1: float,
-                            points2: float):
-        """Display the results of a combat round with points gained"""
+    def display_round_results(self, battle_state: BattleState, points1: float, points2: float):
+        """Display the results of a combat round"""
         print(f"\n{'='*20} ROUND RESULTS {'='*20}")
         
-        # Show round outcome
-        print(f"\n{result}")
+        print(f"\n{battle_state.current_round_state.result}")
         
-        # Show points gained
         if points1 > 0:
-            print(f"{fighter1.name} gained {points1:.1f} points!")
+            print(f"{battle_state.fighter1.name} gained {points1:.1f} points!")
         if points2 > 0:
-            print(f"{fighter2.name} gained {points2:.1f} points!")
+            print(f"{battle_state.fighter2.name} gained {points2:.1f} points!")
         
-        # Show current scores
         print(f"\nCurrent Scores:")
-        print(f"{fighter1.name}: {fighter1.score:.1f} points")
-        print(f"{fighter2.name}: {fighter2.score:.1f} points")
+        print(f"{battle_state.fighter1.name}: {battle_state.fighter1.score:.1f} points")
+        print(f"{battle_state.fighter2.name}: {battle_state.fighter2.score:.1f} points")
+        
+        # Display any special achievements
+        streak = battle_state.get_streak(battle_state.fighter1)
+        if streak > 1:
+            print(f"\n{battle_state.fighter1.name} is on a {streak} win streak!")
+        
+        streak = battle_state.get_streak(battle_state.fighter2)
+        if streak > 1:
+            print(f"\n{battle_state.fighter2.name} is on a {streak} win streak!")
+        
         print(f"\n{'='*50}")
 
     def _create_round_log(self, 
-                         round_num: int, 
-                         fighter1: Fighter, 
-                         fighter2: Fighter,
-                         move1: str,
-                         move2: str,
-                         result: str,
+                         battle_state: BattleState,
                          points1: float,
                          points2: float) -> Dict:
         """Create a log entry for the current round"""
         return {
-            'round': round_num,
-            'move1': move1,
-            'move2': move2,
-            'fighter1_effect': fighter1.current_effect.name if fighter1.current_effect else 'None',
-            'fighter2_effect': fighter2.current_effect.name if fighter2.current_effect else 'None',
-            'result': result,
-            'fighter1_score': fighter1.score,
-            'fighter2_score': fighter2.score,
+            'round': battle_state.current_round,
+            'move1': battle_state.current_round_state.fighter1_move,
+            'move2': battle_state.current_round_state.fighter2_move,
+            'fighter1_effect': (battle_state.current_round_state.fighter1_effect.name 
+                              if battle_state.current_round_state.fighter1_effect 
+                              else 'None'),
+            'fighter2_effect': (battle_state.current_round_state.fighter2_effect.name
+                              if battle_state.current_round_state.fighter2_effect
+                              else 'None'),
+            'result': battle_state.current_round_state.result,
+            'fighter1_score': battle_state.fighter1.score,
+            'fighter2_score': battle_state.fighter2.score,
             'points_gained1': points1,
             'points_gained2': points2
         }
 
 def play_interactive_game():
-    """Main function with enhanced fighter creation"""
+    """Main function to start and run an interactive game session"""
     battle_system = InteractiveBattleSystem()
     
     print("\nWelcome to the Interactive Battle System!")
@@ -238,18 +253,17 @@ def play_interactive_game():
     
     battle_log = battle_system.play_interactive_battle(player, ai_opponent)
     
-    # Display final results
+    # Display final results with battle summary
     print("\nBattle Complete!")
-    final_score1 = battle_log[-1]['fighter1_score']
-    final_score2 = battle_log[-1]['fighter2_score']
     
+    final_log = battle_log[-1]
     print(f"\nFinal Scores:")
-    print(f"{player.name}: {final_score1:.1f} points")
-    print(f"{ai_opponent.name}: {final_score2:.1f} points")
+    print(f"{player.name}: {final_log['fighter1_score']:.1f} points")
+    print(f"{ai_opponent.name}: {final_log['fighter2_score']:.1f} points")
     
-    if final_score1 > final_score2:
+    if final_log['fighter1_score'] > final_log['fighter2_score']:
         print(f"\n{player.name} wins!")
-    elif final_score2 > final_score1:
+    elif final_log['fighter2_score'] > final_log['fighter1_score']:
         print(f"\n{ai_opponent.name} wins!")
     else:
         print("\nIt's a draw!")
