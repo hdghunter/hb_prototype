@@ -163,32 +163,44 @@ class Pillz:
     def get_effect(pillz_type: PillzType) -> Optional[PillzEffect]:
         if pillz_type == PillzType.SOUTH_PACIFIC:
             return PillzEffect(
-                name="South Pacific",
-                duration=2,
-                activation_condition=ActivationCondition.ALWAYS,
+                name="South Pacific (Dexterity)",
+                duration=2,  # Effect lasts for current and next round
+                activation_condition=ActivationCondition.ALWAYS,  # Activates on any move
                 effect_type=EffectType.DAMAGE,
                 priority=1,
                 round_effects={
-                    0: {'damage_multiplier': 0.0, 'skip_round': True},
-                    1: {'damage_multiplier': 2.0}
+                    0: {  # Current round
+                        'damage_multiplier': 0.0,  # No damage dealt
+                        'skip_round': True,  # Force round skip
+                    },
+                    1: {  # Next round
+                        'damage_multiplier': 2.0,  # Double damage
+                        'skip_round': False
+                    }
                 }
             )
         elif pillz_type == PillzType.NORDIC_SHIELD:
             return PillzEffect(
-                name="Nordic Shield",
-                duration=2,
-                activation_condition=ActivationCondition.ALWAYS,
+                name="Nordic Shield (Shield)",
+                duration=2,  # Effect lasts for current and next round
+                activation_condition=ActivationCondition.ON_LOSE,  # Only activates on losing move
                 effect_type=EffectType.RESISTANCE,
                 priority=1,
                 round_effects={
-                    0: {'resistance_multiplier': 2.0},
-                    1: {'resistance_multiplier': 0.0}
+                    0: {  # Current round - no effect
+                        'resistance_multiplier': 1.0,
+                        'skip_round': False
+                    },
+                    1: {  # Next round - double resistance
+                        'resistance_multiplier': 2.0,
+                        'skip_round': False
+                    }
                 }
             )
         elif pillz_type == PillzType.GODZILLA_CAKE:
             bonus = random.randint(1, 10)
             return PillzEffect(
-                name="Godzilla Cake (Brave)",
+                name=f"Godzilla Cake (Brave +{bonus} DMG)",
                 duration=-1,  # Permanent effect
                 activation_condition=ActivationCondition.ALWAYS,
                 effect_type=EffectType.PERMANENT_DAMAGE,
@@ -200,7 +212,7 @@ class Pillz:
             )
         elif pillz_type == PillzType.KISS:
             return PillzEffect(
-                name="Kiss (Don't Cry)",
+                name="Kiss (Don't Cry +10 RES)",
                 duration=-1,  # Permanent effect
                 activation_condition=ActivationCondition.ON_LOSE,
                 effect_type=EffectType.PERMANENT_RESISTANCE,
@@ -213,7 +225,7 @@ class Pillz:
         elif pillz_type == PillzType.SAILOR_MOON:
             bonus = random.randint(1, 10)
             return PillzEffect(
-                name="Sailor Moon (Resolve)",
+                name=f"Sailor Moon (Resolve +{bonus} RES)",
                 duration=-1,  # Permanent effect
                 activation_condition=ActivationCondition.ALWAYS,
                 effect_type=EffectType.PERMANENT_RESISTANCE,
