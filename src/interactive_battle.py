@@ -100,12 +100,16 @@ class InteractiveBattleSystem(BattleSystem):
         # Player status
         print(f"\n{battle_state.fighter1.name}:")
         print(f"Current Score: {battle_state.fighter1.score:.1f} points")
+        print(f"Total Damage: {battle_state.fighter1.get_total_damage():.1f}")
+        print(f"Total Resistance: {battle_state.fighter1.get_total_resistance():.1f}")
         for effect in battle_state.get_active_effects(battle_state.fighter1):
             print(f"Active Effect: {effect.name}")
         
         # AI status
         print(f"\n{battle_state.fighter2.name}:")
         print(f"Current Score: {battle_state.fighter2.score:.1f} points")
+        print(f"Total Damage: {battle_state.fighter2.get_total_damage():.1f}")
+        print(f"Total Resistance: {battle_state.fighter2.get_total_resistance():.1f}")
         for effect in battle_state.get_active_effects(battle_state.fighter2):
             print(f"Active Effect: {effect.name}")
         
@@ -136,10 +140,13 @@ class InteractiveBattleSystem(BattleSystem):
         print("1. No pillz")
         print("2. South Pacific (Skip this round, double damage next round)")
         print("3. Nordic Shield (Double resistance this round, no resistance next round)")
+        print("4. Godzilla Cake (Permanent random damage boost 1-10)")
+        print("5. Kiss (Permanent +10 resistance when losing)")
+        print("6. Sailor Moon (Permanent random resistance boost 1-10)")
         
         while True:
             try:
-                choice = int(input("Enter your choice (1-3): "))
+                choice = int(input("Enter your choice (1-6): "))
                 if choice == 1:
                     print("\nYou chose: No pillz")
                     return PillzType.NONE
@@ -149,18 +156,33 @@ class InteractiveBattleSystem(BattleSystem):
                 elif choice == 3:
                     print("\nYou chose: Nordic Shield")
                     return PillzType.NORDIC_SHIELD
+                elif choice == 4:
+                    print("\nYou chose: Godzilla Cake")
+                    return PillzType.GODZILLA_CAKE
+                elif choice == 5:
+                    print("\nYou chose: Kiss")
+                    return PillzType.KISS
+                elif choice == 6:
+                    print("\nYou chose: Sailor Moon")
+                    return PillzType.SAILOR_MOON
                 else:
-                    print("Invalid choice. Please enter 1, 2, or 3.")
+                    print("Invalid choice. Please enter a number between 1 and 6.")
             except ValueError:
                 print("Invalid input. Please enter a number.")
+
 
     def _get_ai_decisions(self) -> Tuple[str, PillzType]:
         """Generate random AI decisions for both move and pillz"""
         # Randomly select move
         move = random.choice(self.moves)
         
-        # Randomly select pillz (20% chance for each pillz type)
-        pillz_choices = [PillzType.NONE] * 6 + [PillzType.SOUTH_PACIFIC] * 2 + [PillzType.NORDIC_SHIELD] * 2
+        # Randomly select pillz (10% chance for each special pillz)
+        pillz_choices = ([PillzType.NONE] * 5 +
+                        [PillzType.SOUTH_PACIFIC] * 1 +
+                        [PillzType.NORDIC_SHIELD] * 1 +
+                        [PillzType.GODZILLA_CAKE] * 1 +
+                        [PillzType.KISS] * 1 +
+                        [PillzType.SAILOR_MOON] * 1)
         pillz = random.choice(pillz_choices)
         
         print(f"AI selected its move and pillz...")
