@@ -45,13 +45,8 @@ class BattleSystem:
         battle_state.record_move(battle_state.fighter1, move1)
         battle_state.record_move(battle_state.fighter2, move2)
         
-        # Determine the base outcome before effects
-        base_result = self._get_base_round_result(move1, move2)
-        
-        # Process all active effects with this pre-determined result
+        # Process all active effects
         modified_stats = self.effect_manager.process_effects(battle_state)
-        
-        # Get modified stats for both fighters
         stats1 = modified_stats.get('fighter1', {})
         stats2 = modified_stats.get('fighter2', {})
         
@@ -67,15 +62,21 @@ class BattleSystem:
         if fighter1_skip and fighter2_skip:
             result = 'Both fighters skip (Pillz effect)'
         elif fighter1_skip:
-            damage = (battle_state.fighter2.damage * 
-                     stats2.get('damage_multiplier', 1.0))
-            points2 = damage
+            points2 = self._calculate_damage(
+                battle_state.fighter2,  # Attacker
+                battle_state.fighter1,  # Defender
+                stats2,  # Attacker stats
+                stats1   # Defender stats
+            )
             battle_state.fighter2.add_score(points2)
             result = f'{battle_state.fighter2.name} wins (Opponent skipped)'
         elif fighter2_skip:
-            damage = (battle_state.fighter1.damage * 
-                     stats1.get('damage_multiplier', 1.0))
-            points1 = damage
+            points1 = self._calculate_damage(
+                battle_state.fighter1,  # Attacker
+                battle_state.fighter2,  # Defender
+                stats1,  # Attacker stats
+                stats2   # Defender stats
+            )
             battle_state.fighter1.add_score(points1)
             result = f'{battle_state.fighter1.name} wins (Opponent skipped)'
         else:
@@ -91,6 +92,30 @@ class BattleSystem:
         
         return result, points1, points2
 
+    def _calculate_damage(self,
+                         attacker: Fighter,
+                         defender: Fighter,
+                         attacker_stats: Dict[str, float],
+                         defender_stats: Dict[str, float]) -> float:
+        """
+        Calculate final damage using the formula:
+        Effective Damage = Base Damage × (1 - (Opponent's Resistance / 100))
+        """
+        # Calculate attacker's damage with modifiers
+        base_damage = (attacker.get_total_damage() * 
+                      attacker_stats.get('damage_multiplier', 1.0))
+        
+        # Calculate defender's resistance with modifiers
+        resistance = (defender.get_total_resistance() * 
+                     defender_stats.get('resistance_multiplier', 1.0))
+        
+        # Apply the damage formula
+        damage_multiplier = 1 - (resistance / 100)
+        final_damage = base_damage * damage_multiplier
+        
+        # Ensure damage is not negative
+        return max(0, final_damage)
+
     def _resolve_moves(self, 
                       battle_state: BattleState,
                       move1: str,
@@ -104,15 +129,21 @@ class BattleSystem:
         if move1 == move2:
             result = 'Draw'
         elif self.does_move_win(move1, move2):
-            damage = (battle_state.fighter1.get_total_damage() * 
-                     stats1.get('damage_multiplier', 1.0))
-            points1 = damage
+            points1 = self._calculate_damage(
+                battle_state.fighter1,  # Attacker
+                battle_state.fighter2,  # Defender
+                stats1,  # Attacker stats
+                stats2   # Defender stats
+            )
             battle_state.fighter1.add_score(points1)
             result = f'{battle_state.fighter1.name} wins'
         elif self.does_move_win(move2, move1):
-            damage = (battle_state.fighter2.get_total_damage() * 
-                     stats2.get('damage_multiplier', 1.0))
-            points2 = damage
+            points2 = self._calculate_damage(
+                battle_state.fighter2,  # Attacker
+                battle_state.fighter1,  # Defender
+                stats2,  # Attacker stats
+                stats1   # Defender stats
+            )
             battle_state.fighter2.add_score(points2)
             result = f'{battle_state.fighter2.name} wins'
         else:
