@@ -4,11 +4,14 @@ Updated to use the new state management and effect processing systems.
 """
 
 import random
+from colorama import init, Fore, Style
 from typing import List, Dict, Tuple
 from .game_core import Fighter, PillzType
 from .battle_system import BattleSystem
 from .battle_state import BattleState
 from .effect_manager import EffectManager
+
+init()
 
 def get_valid_stat_input(prompt: str, min_value: int = 1, max_value: int = 50) -> int:
     """Helper function to get valid numerical input for fighter stats"""
@@ -97,21 +100,19 @@ class InteractiveBattleSystem(BattleSystem):
         """Display the start of round information"""
         print(f"\n{'='*20} ROUND {battle_state.current_round} {'='*20}")
         
-        # Player status
         print(f"\n{battle_state.fighter1.name}:")
-        print(f"Current Score: {battle_state.fighter1.score:.1f} points")
-        print(f"Total Damage: {battle_state.fighter1.get_total_damage():.1f}")
-        print(f"Total Resistance: {battle_state.fighter1.get_total_resistance():.1f}")
+        print(f"Current Score: {Fore.YELLOW}{battle_state.fighter1.score:.1f}{Style.RESET_ALL} points")
+        print(f"Total Damage: {Fore.RED}{battle_state.fighter1.get_total_damage():.1f}{Style.RESET_ALL}")
+        print(f"Total Resistance: {Fore.BLUE}{battle_state.fighter1.get_total_resistance():.1f}{Style.RESET_ALL}")
         for effect in battle_state.get_active_effects(battle_state.fighter1):
-            print(f"Active Effect: {effect.name}")
+            print(f"Active Effect: {Fore.MAGENTA}{effect.name}{Style.RESET_ALL}")
         
-        # AI status
         print(f"\n{battle_state.fighter2.name}:")
-        print(f"Current Score: {battle_state.fighter2.score:.1f} points")
-        print(f"Total Damage: {battle_state.fighter2.get_total_damage():.1f}")
-        print(f"Total Resistance: {battle_state.fighter2.get_total_resistance():.1f}")
+        print(f"Current Score: {Fore.YELLOW}{battle_state.fighter2.score:.1f}{Style.RESET_ALL} points")
+        print(f"Total Damage: {Fore.RED}{battle_state.fighter2.get_total_damage():.1f}{Style.RESET_ALL}")
+        print(f"Total Resistance: {Fore.BLUE}{battle_state.fighter2.get_total_resistance():.1f}{Style.RESET_ALL}")
         for effect in battle_state.get_active_effects(battle_state.fighter2):
-            print(f"Active Effect: {effect.name}")
+            print(f"Active Effect: {Fore.MAGENTA}{effect.name}{Style.RESET_ALL}")
         
         print(f"\n{'='*50}")
 
@@ -207,25 +208,31 @@ class InteractiveBattleSystem(BattleSystem):
         """Display the results of a combat round"""
         print(f"\n{'='*20} ROUND RESULTS {'='*20}")
         
-        print(f"\n{battle_state.current_round_state.result}")
-        
-        if points1 > 0:
-            print(f"{battle_state.fighter1.name} gained {points1:.1f} points!")
-        if points2 > 0:
-            print(f"{battle_state.fighter2.name} gained {points2:.1f} points!")
+        result = battle_state.current_round_state.result.lower()
+        if 'fighter1 wins' in result:
+            print(f"\n{Fore.GREEN}{battle_state.current_round_state.result}{Style.RESET_ALL}")
+            if points1 > 0:
+                print(f"{Fore.GREEN}{battle_state.fighter1.name} gained {points1:.1f} points!{Style.RESET_ALL}")
+            print(f"{Fore.RED}{battle_state.fighter2.name} lost{Style.RESET_ALL}")
+        elif 'fighter2 wins' in result:
+            print(f"\n{Fore.RED}{battle_state.current_round_state.result}{Style.RESET_ALL}")
+            if points2 > 0:
+                print(f"{Fore.GREEN}{battle_state.fighter2.name} gained {points2:.1f} points!{Style.RESET_ALL}")
+            print(f"{Fore.RED}{battle_state.fighter1.name} lost{Style.RESET_ALL}")
+        else:
+            print(f"\n{result}")
         
         print(f"\nCurrent Scores:")
-        print(f"{battle_state.fighter1.name}: {battle_state.fighter1.score:.1f} points")
-        print(f"{battle_state.fighter2.name}: {battle_state.fighter2.score:.1f} points")
+        print(f"{battle_state.fighter1.name}: {Fore.YELLOW}{battle_state.fighter1.score:.1f}{Style.RESET_ALL} points")
+        print(f"{battle_state.fighter2.name}: {Fore.YELLOW}{battle_state.fighter2.score:.1f}{Style.RESET_ALL} points")
         
-        # Display any special achievements
         streak = battle_state.get_streak(battle_state.fighter1)
         if streak > 1:
-            print(f"\n{battle_state.fighter1.name} is on a {streak} win streak!")
+            print(f"\n{Fore.CYAN}{battle_state.fighter1.name} is on a {streak} win streak!{Style.RESET_ALL}")
         
         streak = battle_state.get_streak(battle_state.fighter2)
         if streak > 1:
-            print(f"\n{battle_state.fighter2.name} is on a {streak} win streak!")
+            print(f"\n{Fore.CYAN}{battle_state.fighter2.name} is on a {streak} win streak!{Style.RESET_ALL}")
         
         print(f"\n{'='*50}")
 
