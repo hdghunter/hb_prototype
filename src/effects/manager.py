@@ -1,8 +1,8 @@
 # src/effects/manager.py
 from typing import Dict, List, Optional
 from dataclasses import dataclass, field
-from .base import Effect
-from .types import StatType, EffectDuration 
+from .base import Effect, EffectDuration
+from .types import StatType
 
 @dataclass
 class EffectHistoryEntry:
@@ -53,10 +53,3 @@ class EffectManager:
 
     def get_pending_effects(self, fighter_id: str) -> List[Effect]:
         return self.pending_effects.get(fighter_id, [])
-    
-    def activate_pending_effect(self, fighter_id: str, effect: Effect) -> None:
-        """Move an effect from pending to active when its condition is met"""
-        if fighter_id in self.pending_effects:
-            if effect in self.pending_effects[fighter_id]:
-                self.pending_effects[fighter_id].remove(effect)
-                self.active_effects[fighter_id].append(effect)

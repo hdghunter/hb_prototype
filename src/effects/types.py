@@ -1,6 +1,6 @@
- #src/effects/types.py
+# src/effects/types.py
 from enum import Enum, auto
-from typing import Union, Literal
+from typing import Literal, Union
 
 class EffectDuration(Enum):
     CURRENT = auto()    # Only current round

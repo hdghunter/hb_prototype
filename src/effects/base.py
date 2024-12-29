@@ -1,4 +1,3 @@
-# src/effects/base.py
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Callable
 import random
@@ -10,14 +9,27 @@ class StatModifier:
     value: EffectValue
     is_random: bool = False
     _cached_random_value: Optional[int] = None
+    _testing_mode: bool = False  # New flag for testing
 
     def get_value(self) -> int:
+        """Get the modifier value"""
         if not self.is_random:
             return self.value if isinstance(self.value, int) else -1  # -1 signals HALF
         
+        if self._testing_mode:
+            # In testing mode, always generate new value
+            return random.randint(1, self.value if isinstance(self.value, int) else 10)
+        
+        # In normal mode, cache and reuse the value
         if self._cached_random_value is None:
-            self._cached_random_value = random.randint(1, 10)
+            self._cached_random_value = random.randint(1, self.value if isinstance(self.value, int) else 10)
         return self._cached_random_value
+
+    def set_testing_mode(self, enabled: bool = True):
+        """Enable or disable testing mode"""
+        self._testing_mode = enabled
+        if enabled:
+            self._cached_random_value = None  # Clear cache when entering testing mode
 
 @dataclass
 class Effect:
