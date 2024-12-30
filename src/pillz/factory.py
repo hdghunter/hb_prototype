@@ -5,6 +5,7 @@ from .pillz import Pillz
 from .simple_pillz import GodzillaCakePillz
 from .complex_pillz import SouthPacificPillz, AprilPillz
 from .random_pillz import SailorMoonPillz, GothamPillz, AlienAttackPillz, OctoberPillz
+from .defense_pillz import NordicShieldPillz
 
 class PillzFactory:
     """Factory for creating pillz instances"""
@@ -16,7 +17,8 @@ class PillzFactory:
         PillzType.SAILOR_MOON: SailorMoonPillz,
         PillzType.GOTHAM: GothamPillz,
         PillzType.ALIEN_ATTACK: AlienAttackPillz,
-        PillzType.OCTOBER: OctoberPillz
+        PillzType.OCTOBER: OctoberPillz,
+        PillzType.NORDIC_SHIELD: NordicShieldPillz
     }
 
     @classmethod
