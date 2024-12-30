@@ -7,6 +7,17 @@ from src.effects.types import StatType
 from src.game_mechanics import Move, MOVE_ADVANTAGES
 from src.pillz.pillz import Pillz
 
+class Colors:
+    """ANSI color codes"""
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
+def color_move(move_name: str, is_winner: bool) -> str:
+    """Color the move name based on whether it is a winning move"""
+    if is_winner:
+        return f"{Colors.GREEN}{move_name}{Colors.RESET}"
+    return f"{Colors.RED}{move_name}{Colors.RESET}"
 @dataclass
 class RoundState:
     """Tracks the state of a round"""
@@ -117,6 +128,8 @@ class Round:
             attacker = self.fighter1 if winner_id == self.fighter1.name else self.fighter2
             defender = self.fighter2 if winner_id == self.fighter1.name else self.fighter1
             self.state.damage_dealt = self._calculate_damage(attacker, defender)
+            # Update points
+            attacker.points += self.state.damage_dealt
 
         # Process round end in effect manager
         self.effect_manager.process_round_end(self.round_number)
@@ -124,32 +137,71 @@ class Round:
         return self.get_round_summary()
 
     def get_round_summary(self) -> str:
-        """Generate a detailed summary of the round"""
-        summary = [f"\nRound {self.round_number} Summary:"]
+        """Generate a detailed formatted summary of the round"""
+        # Constants for box formatting
+        BOX_WIDTH = 36  # Standard width for all boxes
+        INNER_WIDTH = BOX_WIDTH - 2  # Width excluding borders
         
-        # Moves
-        summary.append(f"{self.fighter1.name}: {self.state.fighter1_move.name}")
-        summary.append(f"{self.fighter2.name}: {self.state.fighter2_move.name}")
+        def center_text(text: str, width: int) -> str:
+            return text.center(width)
+
+        def pad_line(text: str) -> str:
+            return f"║ {text:<{INNER_WIDTH-2}} ║"
+
+        lines = []
+        # Top border
+        lines.append("╔" + "═" * INNER_WIDTH + "╗")
+        # Round number centered
+        lines.append(pad_line(center_text(f"Round {self.round_number} Summary", INNER_WIDTH-2)))
+        lines.append("╠" + "═" * INNER_WIDTH + "╣")
         
-        # Pillz
-        if self.state.fighter1_pillz:
-            summary.append(f"{self.fighter1.name} used {self.state.fighter1_pillz.name}")
-        if self.state.fighter2_pillz:
-            summary.append(f"{self.fighter2.name} used {self.state.fighter2_pillz.name}")
+        # Score section
+        lines.append(pad_line("Current Score:"))
+        lines.append(pad_line(f"{self.fighter1.name}: {self.fighter1.points}"))
+        lines.append(pad_line(f"{self.fighter2.name}: {self.fighter2.points}"))
+        lines.append("╠" + "═" * INNER_WIDTH + "╣")
         
-        # Outcome
+        # Moves section
+        lines.append(pad_line("Moves:"))
+        f1_move = color_move(self.state.fighter1_move.name, self.state.round_winner == self.fighter1.name)
+        f2_move = color_move(self.state.fighter2_move.name, self.state.round_winner == self.fighter2.name)
+        lines.append(pad_line(f"{self.fighter1.name}: {f1_move}"))
+        lines.append(pad_line(f"{self.fighter2.name}: {f2_move}"))
+        
+        # Pillz section
+        if self.state.fighter1_pillz or self.state.fighter2_pillz:
+            lines.append("╠" + "═" * INNER_WIDTH + "╣")
+            lines.append(pad_line("Pillz Used:"))
+            if self.state.fighter1_pillz:
+                lines.append(pad_line(f"{self.fighter1.name}: {self.state.fighter1_pillz.name}"))
+            if self.state.fighter2_pillz:
+                lines.append(pad_line(f"{self.fighter2.name}: {self.state.fighter2_pillz.name}"))
+        
+        # Outcome section
+        lines.append("╠" + "═" * INNER_WIDTH + "╣")
         if self.state.round_winner:
-            summary.append(f"\nWinner: {self.state.round_winner}")
-            summary.append(f"Damage Dealt: {self.state.damage_dealt}")
+            winner_text = f"{Colors.GREEN}{self.state.round_winner}{Colors.RESET}"
+            lines.append(pad_line(f"Winner: {winner_text}"))
+            lines.append(pad_line(f"Damage: {self.state.damage_dealt}"))
         else:
-            summary.append("\nRound Drawn")
+            lines.append(pad_line(center_text("Round Drawn", INNER_WIDTH-2)))
+        
+        # Effects section
+        f1_effects = self.effect_manager.get_active_effects(self.fighter1.name)
+        f2_effects = self.effect_manager.get_active_effects(self.fighter2.name)
+        if f1_effects or f2_effects:
+            lines.append("╠" + "═" * INNER_WIDTH + "╣")
+            lines.append(pad_line("Active Effects:"))
+            if f1_effects:
+                lines.append(pad_line(f"{self.fighter1.name}'s effects:"))
+                for effect in f1_effects:
+                    lines.append(pad_line(f"  - {effect.name}"))
+            if f2_effects:
+                lines.append(pad_line(f"{self.fighter2.name}'s effects:"))
+                for effect in f2_effects:
+                    lines.append(pad_line(f"  - {effect.name}"))
 
-        # Active Effects
-        for fighter in [self.fighter1, self.fighter2]:
-            active_effects = self.effect_manager.get_active_effects(fighter.name)
-            if active_effects:
-                summary.append(f"\n{fighter.name}'s Active Effects:")
-                for effect in active_effects:
-                    summary.append(f"- {effect.name}")
-
-        return "\n".join(summary)
+        # Bottom border
+        lines.append("╚" + "═" * INNER_WIDTH + "╝")
+        
+        return "\n".join(lines)

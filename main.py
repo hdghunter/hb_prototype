@@ -3,9 +3,11 @@ import random
 from src.game_mechanics import Fighter, Move
 from src.game.round import Round
 from src.effects.manager import EffectManager
+from src.effects.types import EffectTarget
 from src.pillz.factory import PillzFactory
-from src.pillz.types import PillzType
+from src.pillz.types import PillzType, PillzActivationType
 from src.pillz.pillz import Pillz
+
 
 def get_valid_stat_input(prompt: str) -> int:
     while True:
@@ -18,16 +20,17 @@ def get_valid_stat_input(prompt: str) -> int:
             print("Please enter a valid number")
 
 def display_move_guide():
-    """Display available moves and what they beat"""
-    print("\nAvailable moves:")
+    BOX_WIDTH = 50  # Standard width for all boxes
+    INNER_WIDTH = BOX_WIDTH - 2  # Width excluding borders
+    """Display available moves and their relationships in a table format"""
+    print("\n=== AVAILABLE MOVES ===")
+    print("╔" + "═" * (INNER_WIDTH) + "╗")
+    print("║ Move          │ Effective Against            ║")
+    print("╠" + "═" * (INNER_WIDTH//2) + "╦" + "═" * (INNER_WIDTH//2) + "╣")
     for move in Move:
-        print(f"{move.value}: {move.name}")
-    print("\nMove relationships:")
-    print("RUSH beats: STRIKE, SWEEP")
-    print("STRIKE beats: SWEEP, GRAPPLE")
-    print("SWEEP beats: GUARD, GRAPPLE")
-    print("GUARD beats: RUSH, STRIKE")
-    print("GRAPPLE beats: RUSH, GUARD")
+        winning_moves = ", ".join([m.name for m in move.get_winning_moves()])
+        print(f"║ {move.name:<12} ║ {winning_moves:<25} ║")
+    print("╚" + "═" * (INNER_WIDTH//2) + "╩" + "═" * (INNER_WIDTH//2) + "╝")
 
 def get_player_move() -> Move:
     """Get move selection from player"""
@@ -39,12 +42,36 @@ def get_player_move() -> Move:
         except (ValueError, KeyError):
             print("Invalid input! Please enter a number between 1 and 5.")
 
-def display_available_pillz() -> None:
-    """Display available pillz and their effects"""
-    print("\nAvailable Pillz:")
-    for pillz_type, pillz_name in PillzFactory.get_available_pillz().items():
+def display_available_pillz():
+    BOX_WIDTH = 50  # Standard width for all boxes
+    INNER_WIDTH = BOX_WIDTH - 2  # Width excluding borders
+    def print_pillz_category(title: str, pillz_list: List[Pillz]) -> None:
+        print(f"\n=== {title} ===")
+        print("╔════╦════════════╦════════════╦" + "═" * (INNER_WIDTH - 28) + "╗")
+        print("║ #  ║ Name       ║ Activation ║ Effect" + " " * (INNER_WIDTH - 34) + "║")
+        print("╠════╬════════════╬════════════╬" + "═" * (INNER_WIDTH - 28) + "╣")
+        for pillz in pillz_list:
+            name = pillz.name[:10]
+            activation = ("Any" if pillz.activation_type == PillzActivationType.ANY_MOVE
+                        else "Win Only" if pillz.activation_type == PillzActivationType.WIN_MOVE_ONLY
+                        else "Lose Only")
+            print(f"║ {pillz.type.value:<3} ║ {name:<10} ║ {activation:<10} ║ {pillz.description:<{INNER_WIDTH-28}} ║")
+        print("╚════╩════════════╩════════════╩" + "═" * (INNER_WIDTH - 28) + "╝")
+
+    offensive_pillz = []
+    defensive_pillz = []
+    
+    # Categorize pillz
+    for pillz_type in PillzFactory.get_available_pillz():
         pillz = PillzFactory.create_pillz(pillz_type)
-        print(f"{pillz_type.value}: {pillz_name} - {pillz.description}")
+        effect = pillz.initialize_effect()
+        if effect and effect.target == EffectTarget.OPPONENT:
+            offensive_pillz.append(pillz)
+        else:
+            defensive_pillz.append(pillz)
+
+    print_pillz_category("OFFENSIVE PILLZ", offensive_pillz)
+    print_pillz_category("DEFENSIVE PILLZ", defensive_pillz)
 
 def get_player_pillz() -> Optional[Pillz]:
     """Get pillz selection from player"""
@@ -136,6 +163,15 @@ def main():
         print(f"You win! Final score - Player: {player.points}, AI: {ai.points}")
     else:
         print(f"AI wins! Final score - AI: {ai.points}, Player: {player.points}")
+        
+def display_score(fighter1: Fighter, fighter2: Fighter) -> None:
+    """Display current match score"""
+    print("\n╔════════════════════════════════╗")
+    print("║         Current Score          ║")
+    print("╠════════════════════════════════╣")
+    print(f"║ {fighter1.name}: {fighter1.points:<20} ║")
+    print(f"║ {fighter2.name}: {fighter2.points:<20} ║")
+    print("╚════════════════════════════════╝")
 
 if __name__ == "__main__":
     main()
