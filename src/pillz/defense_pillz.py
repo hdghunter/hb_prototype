@@ -36,3 +36,33 @@ class NordicShieldPillz(Pillz):
         
         self._effect = self.initialize_effect()
         return self._effect
+    
+class KissPillz(Pillz):
+    """Implementation of Kiss pillz (Don't Cry effect)"""
+    def __init__(self):
+        super().__init__(
+            type=PillzType.KISS,
+            name="Kiss",
+            activation_type=PillzActivationType.LOSE_MOVE_ONLY,
+            description="Increases Resistance value by 10"
+        )
+
+    def initialize_effect(self) -> Effect:
+        return Effect(
+            name="Don't Cry",
+            duration=EffectDuration.PERMANENT,
+            target=EffectTarget.SELF,
+            activation=ActivationCondition.LOSE_ONLY,
+            modifiers=[
+                StatModifier(
+                    stat_type=StatType.RESISTANCE,
+                    value=10,
+                    is_random=False
+                )
+            ]
+        )
+    def activate(self, won_round: bool) -> Optional[Effect]:
+        if not self.can_activate(won_round):
+            return None
+        self._effect = self.initialize_effect()
+        return self._effect

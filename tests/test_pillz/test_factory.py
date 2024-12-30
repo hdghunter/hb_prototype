@@ -2,7 +2,7 @@
 import pytest
 from src.pillz.types import PillzType
 from src.pillz.factory import PillzFactory
-from src.pillz.pillz import GodzillaCakePillz
+from src.pillz.simple_pillz import GodzillaCakePillz
 
 class TestPillzFactory:
     def test_create_valid_pillz(self):

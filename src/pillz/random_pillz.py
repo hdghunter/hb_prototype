@@ -152,3 +152,65 @@ class OctoberPillz(Pillz):
             return None
         self._effect = self.initialize_effect()
         return self._effect
+    
+class BurningManPillz(Pillz):
+    """Implementation of Burning Man pillz (Burn effect)"""
+    def __init__(self):
+        super().__init__(
+            type=PillzType.BURNING_MAN,
+            name="Burning Man",
+            activation_type=PillzActivationType.WIN_MOVE_ONLY,
+            description="Decreases Resistance value of the opponent by half for following rounds"
+        )
+
+    def initialize_effect(self) -> Effect:
+        return Effect(
+            name="Burn",
+            duration=EffectDuration.PERMANENT,
+            target=EffectTarget.OPPONENT,
+            activation=ActivationCondition.WIN_ONLY,
+            modifiers=[
+                StatModifier(
+                    stat_type=StatType.RESISTANCE,
+                    value="HALF",
+                    is_random=False
+                )
+            ]
+        )
+
+    def activate(self, won_round: bool) -> Optional[Effect]:
+        if not self.can_activate(won_round):
+            return None
+        self._effect = self.initialize_effect()
+        return self._effect
+    
+class HawaiiHorrorPillz(Pillz):
+    """Implementation of Hawaii Horror pillz (Infect effect)"""
+    def __init__(self):
+        super().__init__(
+            type=PillzType.HAWAII_HORROR,
+            name="Hawaii Horror",
+            activation_type=PillzActivationType.WIN_MOVE_ONLY,
+            description="Decreases Damage value of the opponent by half for following rounds"
+        )
+
+    def initialize_effect(self) -> Effect:
+        return Effect(
+            name="Infect",
+            duration=EffectDuration.PERMANENT,
+            target=EffectTarget.OPPONENT,
+            activation=ActivationCondition.WIN_ONLY,
+            modifiers=[
+                StatModifier(
+                    stat_type=StatType.DAMAGE,
+                    value="HALF",
+                    is_random=False
+                )
+            ]
+        )
+
+    def activate(self, won_round: bool) -> Optional[Effect]:
+        if not self.can_activate(won_round):
+            return None
+        self._effect = self.initialize_effect()
+        return self._effect

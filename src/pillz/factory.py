@@ -3,9 +3,9 @@ from typing import Dict, Type
 from .types import PillzType
 from .pillz import Pillz
 from .simple_pillz import GodzillaCakePillz
-from .complex_pillz import SouthPacificPillz, AprilPillz
-from .random_pillz import SailorMoonPillz, GothamPillz, AlienAttackPillz, OctoberPillz
-from .defense_pillz import NordicShieldPillz
+from .complex_pillz import SouthPacificPillz, AprilPillz, JurassicPillz
+from .random_pillz import SailorMoonPillz, GothamPillz, AlienAttackPillz, OctoberPillz, BurningManPillz, HawaiiHorrorPillz
+from .defense_pillz import NordicShieldPillz, KissPillz
 
 class PillzFactory:
     """Factory for creating pillz instances"""
@@ -18,7 +18,11 @@ class PillzFactory:
         PillzType.GOTHAM: GothamPillz,
         PillzType.ALIEN_ATTACK: AlienAttackPillz,
         PillzType.OCTOBER: OctoberPillz,
-        PillzType.NORDIC_SHIELD: NordicShieldPillz
+        PillzType.NORDIC_SHIELD: NordicShieldPillz,
+        PillzType.JURASSIC: JurassicPillz,     
+        PillzType.BURNING_MAN: BurningManPillz,
+        PillzType.KISS: KissPillz,
+        PillzType.HAWAII_HORROR: HawaiiHorrorPillz
     }
 
     @classmethod

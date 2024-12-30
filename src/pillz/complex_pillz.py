@@ -106,3 +106,34 @@ class AprilPillz(Pillz):
         # Create new effect each time for testing randomization
         self._effect = self.initialize_effect()
         return self._effect
+    
+class JurassicPillz(Pillz):
+    """Implementation of Jurassic pillz (Spike effect)"""
+    def __init__(self):
+        super().__init__(
+            type=PillzType.JURASSIC,
+            name="Jurassic",
+            activation_type=PillzActivationType.LOSE_MOVE_ONLY,
+            description="Copies the opponent's Damage value and all effects they used in the round and applies these back to them"
+        )
+
+    def initialize_effect(self) -> Effect:
+        return Effect(
+            name="Spike",
+            duration=EffectDuration.CURRENT,
+            target=EffectTarget.OPPONENT,
+            activation=ActivationCondition.LOSE_ONLY,
+            modifiers=[
+                StatModifier(
+                    stat_type=StatType.DAMAGE,
+                    value=-1,  # Special value to indicate copying
+                    is_random=False
+                )
+            ]
+        )
+
+    def activate(self, won_round: bool) -> Optional[Effect]:
+        if not self.can_activate(won_round):
+            return None
+        self._effect = self.initialize_effect()
+        return self._effect
